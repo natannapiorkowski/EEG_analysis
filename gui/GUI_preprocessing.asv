@@ -1,0 +1,784 @@
+function varargout = GUI_preprocessing(varargin)
+% GUI_preprocessing MATLAB code for GUI_preprocessing.fig
+%      GUI_preprocessing, by itself, creates a new GUI_preprocessing or raises the existing
+%      singleton*.
+%
+%      H = GUI_preprocessing returns the handle to a new GUI_preprocessing or the handle to
+%      the existing singleton*.
+%
+%      GUI_preprocessing('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in GUI_preprocessing.M with the given input arguments.
+%
+%      GUI_preprocessing('Property','Value',...) creates a new GUI_preprocessing or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before GUI_preprocessing_OpeningFcn gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to GUI_preprocessing_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help GUI_preprocessing
+
+% Last Modified by GUIDE v2.5 05-Mar-2015 16:57:11
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @GUI_preprocessing_OpeningFcn, ...
+                   'gui_OutputFcn',  @GUI_preprocessing_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+
+function GUI_preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
+    % This function has no output args, see OutputFcn.
+    % hObject    handle to figure
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    % varargin   command line arguments to GUI_preprocessing (see VARARGIN)
+
+    % Some initial values and variables
+%     handles.output = hObject;   
+    
+    handles.output.analysisStep = 'importChansLocs';
+    handles.output.interpolationMethod = 'invdist';
+    handles.output.timeRangeToDisplay = str2double(get(handles.timeRange_edit,'String'));
+    handles.output.amplitudeToDisplay = str2double(get(handles.amplitude_edit,'String'));
+    handles.output.removeChannels = get(handles.removeChannels_checkbox,'Value');
+    handles.output.ICAmaxSteps = str2double(get(handles.ICAmaxSteps_edit,'String'));
+    handles.output.PCAcomps    = str2double(get(handles.PCAcomps_edit,'String'));
+    handles.output.notchFreq   = str2double(get(handles.lowerNotch_edit,'String'));
+    
+    handles.output.spikeRange               = str2double(get(handles.spikeRange_edit,'String'));
+    handles.output.rangeShift               = str2double(get(handles.rangeShift_edit,'String'));
+    handles.output.spikeLen                 = str2double(get(handles.spikeLen_edit,'String'));
+    handles.output.interpolationTimeRange   = str2double(get(handles.interpolationTimeRange_edit,'String'));
+    handles.output.plotSpikeRemovalResults  = get(handles.plotSpikeRemovalResults_checkbox,'String');
+    
+    handles.output.prestimDur = str2double(get(handles.prestimDur_edit,'String'));
+    handles.output.poststimDur = str2double(get(handles.postStim_edit,'String'));
+    
+    handles.output.lowAmplitudeThreshold  = str2double(get(handles.lowAmplitudeThreshold_edit,'String'));
+    handles.output.highAmplitudeThreshold = str2double(get(handles.highAmplitudeThreshold_edit,'String'));
+    handles.output.sampleToSample         = str2double(get(handles.sampleToSample_edit,'String'));
+    handles.output.minTimeWindowArtifacts = str2double(get(handles.minTimeWindowArtifacts_edit,'String'));
+    handles.output.maxTimeWindowArtifacts = str2double(get(handles.maxTimeWindowArtifacts_edit,'String'));
+    handles.output.noActivity             = str2double(get(handles.noActivity_edit,'String'));
+    handles.output.noActivityDuration     = str2double(get(handles.noActivityDuration_edit,'String'));
+    
+    % groups of text boxes and buttons to disable/enable tem
+    handles.importChansLocs_group   = {handles.interpolationMethods_popup};
+    handles.rereference_group       = {handles.refChans_edit};
+    handles.resample_group          = {handles.newFS_edit};
+    handles.highPass_group          = {handles.highPass_edit};
+    handles.lowPass_group           = {handles.lowPass_edit};
+    handles.dataInspection_group    = {handles.text_dataInspection ,handles.timeRange_edit ,handles.text_dataInspection2 ,handles.text_dataInspection3 ,handles.amplitude_edit, handles.text_dataInspection4, handles.removeChannels_checkbox};
+    handles.calculateICA_group      = {handles.text_calculateICA, handles.ICAmaxSteps_edit, handles.PCAcomps_text ,handles.PCAcomps_edit};
+    handles.removeComps_group       = {handles.text8 ,handles.ICAchans_edit};
+    handles.notch_group          = {handles.text_notch ,handles.lowerNotch_edit ,handles.text_notch2};
+    handles.removeSpikes_group   = {handles.text30, handles.spikeRange_edit, handles.text31, handles.rangeShift_edit, handles.text32, handles.spikeLen_edit, handles.interpolationTimeRange_edit,handles.text332};
+    handles.epoch_group             = {handles.text_epoch ,handles.prestimDur_edit ,handles.text_epoch2 ,handles.text_epoch3 ,handles.postStim_edit ,handles.text_epoch4};
+    handles.artifactsRejection_group= {handles.text_artifRejection, handles.lowAmplitudeThreshold_edit, handles.highAmplitudeThreshold_edit, handles.text_artifRejection2, handles.text_artifRejection3, handles.minTimeWindowArtifacts_edit , handles.maxTimeWindowArtifacts_edit , handles.text_artifRejection4,...
+                                handles.text_artifRejection5 , handles.sampleToSample_edit ,handles.text_artifRejection6,...
+                                handles.text_artifRejection7 ,handles.noActivity_edit , handles.text_artifRejection8 ,handles.text_artifRejection9 ,handles.noActivityDuration_edit ,handles.text_artifRejection10};
+    hArtifRadio = findobj(handles.figure1, 'Tag', 'artifReject_radio');
+    if isempty(hArtifRadio)
+        warning('Could not find radio button with Tag "artifReject_radio".');
+    else
+        oldUnits = get(hArtifRadio, 'Units');
+        set(hArtifRadio, 'Units', 'pixels');
+        rPos = get(hArtifRadio, 'Position');
+        set(hArtifRadio, 'Units', oldUnits);
+
+        cbH = 18;
+        cbX = rPos(1)*1.2;
+        cbY = rPos(2) - cbH - 6;
+        cbW = max(150, rPos(3));
+
+        handles.use_previously_rejected_epochs_checkbox = uicontrol( ...
+            'Parent', get(hArtifRadio,'Parent'), ...
+            'Style', 'checkbox', ...
+            'String', 'Use previously rejected epochs', ...
+            'Tag', 'use_previously_rejected_epochs_checkbox', ...
+            'Value', 0, ...
+            'Units', 'pixels', ...
+            'Position', [cbX cbY cbW cbH], ...
+            'Callback', @use_previously_rejected_epochs_checkbox_Callback ...
+        );
+
+        handles.output.artifactsExtra = 0;
+        handles.artifactsRejection_group{end+1} = handles.use_previously_rejected_epochs_checkbox;
+    end
+
+    setAllFieldsDisabled(handles)
+    set(handles.interpolationMethods_popup, 'Enable', 'on');
+    
+    % make main panel invisible (first files must be loaded)
+    set(handles.uipanel1, 'Visible', 'off')
+    
+    % Update handles structure
+    guidata(hObject, handles);
+    
+    % UIWAIT makes GUI_preprocessing wait for user response (see UIRESUME)
+    uiwait(handles.figure1);
+function varargout = GUI_preprocessing_OutputFcn(hObject, eventdata, handles) 
+    % varargout  cell array for returning output args (see VARARGOUT);
+    % hObject    handle to figure
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Get default command line output from handles structure
+    varargout{1} = handles.output;
+    delete(handles.figure1);
+
+function listbox_Callback(hObject, eventdata, handles)
+    contents = cellstr(get(hObject,'String'));
+    str = contents{get(hObject,'Value')};
+
+    switch handles.output.analysisStep
+        case 'rereference'
+             if isequal(get(handles.refChans_edit, 'String'), 'Reference channels')
+                set(handles.refChans_edit, 'String', []);
+             end
+             channels = get(handles.refChans_edit, 'String');
+             channels = sprintf('%s %s', channels , str);
+             set(handles.refChans_edit, 'String', channels)
+             handles.output.newReference = regexp(get(handles.refChans_edit,'String'), '\W', 'split');
+             
+        case 'removeICA'
+             if isequal(get(handles.ICAchans_edit, 'String'), 'Channels')
+                set(handles.ICAchans_edit, 'String', [])
+             end
+             channels = get(handles.ICAchans_edit, 'String');
+             channels = sprintf('%s %s', channels , str);
+             set(handles.ICAchans_edit, 'String', channels)
+             handles.output.ICAchans = regexp(get(handles.ICAchans_edit,'String'), '\W', 'split');
+    end
+    guidata(hObject, handles);
+function listbox_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to listbox (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: listbox controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+
+    
+function showFolderTree_button_Callback(hObject, eventdata, handles)
+    mainPath = uigetdir();
+    rootfolder = regexp(mainPath, filesep, 'split');
+    rootfolder = rootfolder{end};
+    subfolders = genpath(mainPath);
+    subfolders = regexp(subfolders, ':', 'split');
+
+    nodes = [0];
+    parents = {mainPath};
+    folderNames = {rootfolder};
+    filesNumber = [];
+    for i = 2:length(subfolders)
+        if ~isempty(subfolders{i})
+            s = regexp(subfolders{i}, filesep, 'split');
+            parent = fullfile(s{1:end-1});
+            child = s{end};
+
+            for j =1:length(parents)
+                if strcmp(strrep(parents{j}, filesep, ''), strrep(parent, filesep, ''))
+                    nodes(end+1) = j;
+                    parents{end+1} = subfolders{i};
+                    folderNames{end+1} = child;
+                end
+            end
+        end
+    end
+
+    % get number of files in each folder
+    for i =1:length(parents)
+        d = dir(parents{i});
+        filesNum = 0;
+        for j =1:length(d);
+            if ~d(j).isdir
+                filesNum=filesNum+1;
+            end
+        end
+        filesNumber(end+1) = filesNum;
+    end
+
+    %% PLOT
+    f = figure();
+    [x,y] = treelayout(nodes);
+    treeplot(nodes);
+    set(gca, 'XColor', [1,1,1], 'YColor', [1,1,1], 'Position', [0,0,1,1]);
+    set(gca, 'FontSize', 15);
+    set(f, 'Color', [1,1,1])
+%     set(f, 'WindowButtonDown', {@keyPressed})
+    for i = 1:length(x)
+        textToPrint = sprintf('%s \nN: %g', folderNames{i},filesNumber(i));
+        text(x(i)+0.02, y(i), textToPrint , 'fontweight' ,'bold', 'Interpreter', 'none');        
+    end
+
+function loadFiles_pushbutton_Callback(hObject, eventdata, handles)
+    % hObject    handle to loadFiles_pushbutton (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    [filenames, pathname] = uigetfile('*','Select Files', 'MultiSelect', 'on');
+    if ischar(filenames)
+        filenames={filenames};
+    end
+    files = {};
+    for i =1:length(filenames)
+        if ~isempty(strfind(filenames{i}, 'bdf')) || ~isempty(strfind(filenames{i}, 'set'))
+            files{end+1} = filenames{i};
+        end
+    end
+    handles.output.filenames=files;
+    handles.output.pathname=pathname;
+    
+    handles.EEG = loadOneEEGFile(hObject, eventdata, handles);
+    handles.output.PCAcomps = handles.EEG.nbchan;
+    
+    set(handles.PCAcomps_edit, 'String', handles.output.PCAcomps);
+    set(handles.listbox, 'String', handles.output.filenames);
+    set(handles.uipanel1, 'Visible', 'on')
+    set(handles.text7, 'Visible', 'off')
+    guidata(hObject, handles);
+function uipanel1_SelectionChangeFcn(hObject, eventdata, handles)
+    % hObject    handle to the selected object in uipanel1 
+    % eventdata  structure with the following fields (see UIBUTTONGROUP)
+    %	EventName: string 'SelectionChanged' (read only)
+    %	OldValue: handle of the previously selected object or empty if none was selected
+    %	NewValue: handle of the currently selected object
+    % handles    structure with handles and user data (see GUIDATA)
+    setAllFieldsDisabled(handles)
+    switch get(hObject, 'Tag')
+        case 'importBDF_radio'
+            handles.output.analysisStep = 'importChansLocs';
+            setFieldsEnabled(handles.importChansLocs_group)
+        case 'rereference_radio'
+            handles.output.analysisStep = 'rereference';    
+            getPropertyFromEEGFile(hObject, eventdata, handles,  'channels')
+            setFieldsEnabled(handles.rereference_group)
+        case 'resmaple_radio'
+            handles.output.analysisStep = 'resample';
+            getPropertyFromEEGFile(hObject, eventdata, handles,  'srate');
+            setFieldsEnabled(handles.resample_group)
+        case 'lowPassFilter_rasdio'
+            handles.output.analysisStep = 'lowPassFilter';
+            setFieldsEnabled(handles.lowPass_group)
+        case 'highPassFilter_rasdio'
+            handles.output.analysisStep = 'highPassFilter';
+            setFieldsEnabled(handles.highPass_group)
+        case 'inspection_radio'
+            handles.output.analysisStep = 'dataInspection';
+            setFieldsEnabled(handles.dataInspection_group)
+        case 'runICA_radio'
+            handles.output.analysisStep = 'runICA';
+            setFieldsEnabled(handles.calculateICA_group)
+        case 'removeICA_radio'
+            handles.output.analysisStep = 'removeICA';
+            getPropertyFromEEGFile(hObject, eventdata, handles,  'channels');
+            setFieldsEnabled(handles.removeComps_group)
+        case 'notch_radio'
+            handles.output.analysisStep = 'notch';  
+            setFieldsEnabled(handles.notch_group)
+        case 'removeSpikes_radio'
+            handles.output.analysisStep = 'removeSpikes';  
+            setFieldsEnabled(handles.removeSpikes_group)
+        case 'epoch_radio'
+            handles.output.analysisStep = 'epoch';
+            setFieldsEnabled(handles.epoch_group)
+        case 'epochSelect_radio'
+            handles.output.analysisStep = 'epochSelectively';
+            setFieldsEnabled(handles.epoch_group)            
+        case 'artifReject_radio'
+            handles.output.analysisStep = 'artifactsRejection';  
+            setFieldsEnabled(handles.artifactsRejection_group)
+        case 'averaging_radio' 
+            handles.output.analysisStep = 'average';  
+    end
+    guidata(hObject, handles);
+
+function interpolationMethods_popup_Callback(hObject, eventdata, handles)
+% hObject    handle to interpolationMethods_popup (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns interpolationMethods_popup contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from interpolationMethods_popup
+    contents = cellstr(get(hObject,'String'));
+    handles.output.interpolationMethod = contents{get(hObject,'Value')};
+    guidata(hObject, handles);
+function interpolationMethods_popup_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to interpolationMethods_popup (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function refChans_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to refChans_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Hints: get(hObject,'String') returns contents of refChans_edit as text
+    %        str2double(get(hObject,'String')) returns contents of refChans_edit as a double
+    handles.output.newReference = regexp(get(hObject,'String'), '\W', 'split');
+    guidata(hObject, handles);
+function refChans_edit_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to refChans_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: edit controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end   
+function newFS_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to newFS_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Hints: get(hObject,'String') returns contents of newFS_edit as text
+    %        str2double(get(hObject,'String')) returns contents of newFS_edit as a double
+    handles.output.newFS = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function newFS_edit_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to newFS_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: edit controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+function lowPass_edit_Callback(hObject, eventdata, handles)
+    handles.output.lowPassFreq = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function lowPass_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to lowPass_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function highPass_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to highPass_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Hints: get(hObject,'String') returns contents of highPass_edit as text
+    %        str2double(get(hObject,'String')) returns contents of highPass_edit as a double
+    handles.output.highPassFreq = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function highPass_edit_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to highPass_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: edit controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+function removeChannels_checkbox_Callback(hObject, eventdata, handles)
+    handles.output.removeChannels = get(hObject,'Value');
+    guidata(hObject, handles);
+function timeRange_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to timeRange_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Hints: get(hObject,'String') returns contents of timeRange_edit as text
+    %        str2double(get(hObject,'String')) returns contents of timeRange_edit as a double
+    handles.output.timeRangeToDisplay = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function timeRange_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to timeRange_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function amplitude_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to amplitude_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Hints: get(hObject,'String') returns contents of amplitude_edit as text
+    %        str2double(get(hObject,'String')) returns contents of amplitude_edit as a double
+    handles.output.amplitudeToDisplay = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function amplitude_edit_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to amplitude_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: edit controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+function ICAmaxSteps_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to ICAmaxSteps_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    % Hints: get(hObject,'String') returns contents of ICAmaxSteps_edit as text
+    %        str2double(get(hObject,'String')) returns contents of ICAmaxSteps_edit as a double
+    handles.output.ICAmaxSteps = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function ICAmaxSteps_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ICAmaxSteps_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function PCAcomps_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to PCAcomps_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    % Hints: get(hObject,'String') returns contents of PCAcomps_edit as text
+    %        str2double(get(hObject,'String')) returns contents of PCAcomps_edit as a double
+    handles.output.PCAcomps = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function PCAcomps_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PCAcomps_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function ICAchans_edit_Callback(hObject, eventdata, handles)
+    % hObject    handle to ICAchans_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+
+    % Hints: get(hObject,'String') returns contents of ICAchans_edit as text
+    %        str2double(get(hObject,'String')) returns contents of ICAchans_edit as a double
+    handles.output.ICAchans = regexp(get(hObject,'String'), '\W', 'split');
+    guidata(hObject, handles);
+function ICAchans_edit_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to ICAchans_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: edit controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+function lowerNotch_edit_Callback(hObject, eventdata, handles)
+    handles.output.notchFreq = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function lowerNotch_edit_CreateFcn(hObject, eventdata, handles)
+    % hObject    handle to lowerNotch_edit (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    empty - handles not created until after all CreateFcns called
+
+    % Hint: edit controls usually have a white background on Windows.
+    %       See ISPC and COMPUTER.
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+function prestimDur_edit_Callback(hObject, eventdata, handles)
+    handles.output.prestimDur = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function prestimDur_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to prestimDur_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function postStim_edit_Callback(hObject, eventdata, handles)
+    handles.output.poststimDur = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function postStim_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to postStim_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+function lowAmplitudeThreshold_edit_Callback(hObject, eventdata, handles)
+    handles.output.lowAmplitudeThreshold = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function lowAmplitudeThreshold_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to lowAmplitudeThreshold_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function highAmplitudeThreshold_edit_Callback(hObject, eventdata, handles)
+    handles.output.highAmplitudeThreshold = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function highAmplitudeThreshold_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to highAmplitudeThreshold_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function sampleToSample_edit_Callback(hObject, eventdata, handles)
+    handles.output.sampleToSample = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function sampleToSample_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to sampleToSample_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function minTimeWindowArtifacts_edit_Callback(hObject, eventdata, handles)
+    handles.output.minTimeWindowArtifacts = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function minTimeWindowArtifacts_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to minTimeWindowArtifacts_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function maxTimeWindowArtifacts_edit_Callback(hObject, eventdata, handles)
+    handles.output.maxTimeWindowArtifacts = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function maxTimeWindowArtifacts_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to maxTimeWindowArtifacts_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function noActivity_edit_Callback(hObject, eventdata, handles)
+    handles.output.noActivity = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function noActivity_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to noActivity_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function noActivityDuration_edit_Callback(hObject, eventdata, handles)
+    handles.output.noActivityDuration = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function noActivityDuration_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to noActivityDuration_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function importChanLocs_pushbutton_Callback(hObject, eventdata, handles)
+    % hObject    handle to importChanLocs_pushbutton (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    [filename, pathname] = uigetfile('*','Select Files', 'MultiSelect', 'on');
+    handles.output.chanlocsFilename=filename;
+    handles.output.chanlocsPath=pathname;
+    set(hObject, 'BackgroundColor', [0 1 0]);
+    guidata(hObject, handles);
+function OK_pushbutton_Callback(hObject, eventdata, handles)
+    % hObject    handle to OK_pushbutton (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    guidata(hObject, handles);
+    uiresume(handles.figure1);
+function spikeRange_edit_Callback(hObject, eventdata, handles)
+    handles.output.spikeRange = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function spikeRange_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to spikeRange_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function rangeShift_edit_Callback(hObject, eventdata, handles)
+    handles.output.rangeShift = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function rangeShift_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to rangeShift_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function spikeLen_edit_Callback(hObject, eventdata, handles)
+    handles.output.spikeLen = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function spikeLen_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to spikeLen_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function interpolationTimeRange_edit_Callback(hObject, eventdata, handles)
+    handles.output.interpolationTimeRange = str2double(get(hObject,'String'));
+    guidata(hObject, handles);
+function interpolationTimeRange_edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to interpolationTimeRange_edit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+function plotSpikeRemovalResults_checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to plotSpikeRemovalResults_checkbox (see GCBO)
+    handles.output.plotSpikeRemovalResults = get(hObject,'Value');
+    guidata(hObject, handles);
+function use_previously_rejected_epochs_checkbox_Callback(hObject, eventdata, handles)
+    handles.output.artifactsExtra = get(hObject,'Value');  % 0/1
+    guidata(hObject, handles);    
+    
+function signalView_pushbutton_Callback(hObject, eventdata, handles)
+    setAllFieldsDisabled(handles)
+    setFieldsEnabled(handles.artifactsRejection_group)
+function EEG = loadOneEEGFile(hObject, eventdata, handles)    
+    % load first EEG file
+    fileToLoad = handles.output.filenames{1};
+    if strfind(fileToLoad, 'bdf')
+        EEG = pop_biosig(fullfile(handles.output.pathname,handles.output.filenames{1}));
+    elseif strfind(fileToLoad, 'set')
+        EEG = pop_loadset('filename',handles.output.filenames{1},'filepath',handles.output.pathname);
+    end
+function getPropertyFromEEGFile(hObject, eventdata, handles,  propertyName)
+    switch propertyName
+        case 'channels'
+            message = 'Available channels: ';
+            message = [message, {handles.EEG.chanlocs.labels}];
+        case 'srate'
+            message = 'Current sampling rate: ';
+            message = [message, {handles.EEG.srate}];
+    end
+    
+    set(handles.listbox, 'String', message);
+    
+    
+
+function secret_pushbutton_Callback(hObject, eventdata, handles)            
+    figure()
+    step = 0.07;    
+    [X,Y,Z] = meshgrid(-3:step:3, -3:step:3, -3:step:3);
+    F = (-(X.^2).*(Z.^3)-(9/80).*(Y.^2).*(Z.^3))+((X.^2)+(9/4).*(Y.^2)+(Z.^2)-1).^3;
+    % shaded surface
+    isosurface(X,Y,Z,F,0)
+    set(gca, 'Visible', 'off')
+    set(gcf, 'Color','w')
+    
+    lighting phong
+    colormap flag
+    axis equal
+
+    for i = 1:3:5*360
+        view(mod(i, 360),0)        
+        drawnow
+    end
+function setAllFieldsDisabled(handles)
+    fields = fieldnames(handles);
+    for i = 1:length(fields)
+        if strfind(fields{i}, 'group')
+            subfields = handles.(fields{i});
+            for j =1:length(subfields)
+                if isequal(get(subfields{j}, 'Style'), 'text')
+                    set(subfields{j}, 'ForegroundColor', [0.8 0.8 0.8]);
+                elseif isequal(get(subfields{j}, 'Style'), 'edit')
+                    set(subfields{j}, 'Enable', 'off'); 
+                elseif isequal(get(subfields{j}, 'Style'), 'popupmenu')
+                    set(subfields{j}, 'Enable', 'off');                       
+                end
+            end
+        end
+    end
+function setFieldsEnabled(handlesGroup)  
+    for i =1:length(handlesGroup)
+        if isequal(get(handlesGroup{i}, 'Style'), 'text')
+            set(handlesGroup{i}, 'ForegroundColor', [0 0 0]);
+        elseif isequal(get(handlesGroup{i}, 'Style'), 'edit')
+            set(handlesGroup{i}, 'Enable', 'on'); 
+        elseif isequal(get(handlesGroup{i}, 'Style'), 'popupmenu')
+            set(handlesGroup{i}, 'Enable', 'on');             
+        else
+            disp(handlesGroup{i})
+        end
+    end    
+
+
+
+
