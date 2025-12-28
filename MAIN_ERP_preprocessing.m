@@ -86,26 +86,37 @@ for subjectNo = 1:length(SETTINGS.filenames)
             recursivelySaveFile(EEG, SETTINGS.pathname, 'HighPassFilter', SETTINGS.filenames{subjectNo});
             
         case 'dataInspection'
-            EEG = rejectEXGchannels(EEG);
-            cmd = ['[tmprej] = eegplot2event(TMPREJ); [EEG LASTCOM] = eeg_eegrej(EEG, tmprej);'];
-%             cmd = ['[tmprej] = eegplot2event(TMPREJ); [EEG.data EEG.xmax tmpalllatencies boundevents] = eegrej(EEG.data, tmprej(:, 3:4),EEG.xmax-EEG.xmin, [EEG.event.latency]); EEG.pnts =size(EEG.data,2); EEG.xmax = EEG.xmax+EEG.xmin; EEG.times = linspace(EEG.xmin, EEG.xmax, size(EEG.data, 2));'];
-            
-            eegplot(EEG.data,  'eloc_file',EEG.chanlocs,...
-                               'butlabel','Reject', ...
-                               'command', cmd,...
-                               'wincolor', [1, 0.7, 0.7],...
-                               'spacing',   SETTINGS.amplitudeToDisplay, ...
-                               'winlength', SETTINGS.timeRangeToDisplay,...
-                               'events', EEG.event, ...
-                               'srate', EEG.srate);
-           input(sprintf('\n =============== \n Visual inspection done? Press ENTER \n ===============  \n')) 
-           
+            disp_srate = 32; % Hz - sufficient for visual inspection
+            downsample_factor = max(1, floor(EEG.srate / disp_srate));
+            EEG_disp = pop_resample(EEG, disp_srate); 
+            tmprej = [];
+            cmd = [sprintf('[tmprej] = eegplot2event(TMPREJ); '), ...
+                   sprintf('tmprej(:,3:4) = tmprej(:,3:4) * %d; ', downsample_factor), ... % Scale time back up
+                   sprintf('[EEG, LASTCOM] = eeg_eegrej(EEG, tmprej);')];
+            %cmd = ['[tmprej] = eegplot2event(TMPREJ); [EEG LASTCOM] = eeg_eegrej(EEG, tmprej);'];
+            %cmd = ['[tmprej] = eegplot2event(TMPREJ); [EEG.data EEG.xmax tmpalllatencies boundevents] = eegrej(EEG.data, tmprej(:, 3:4),EEG.xmax-EEG.xmin, [EEG.event.latency]); EEG.pnts =size(EEG.data,2); EEG.xmax = EEG.xmax+EEG.xmin; EEG.times = linspace(EEG.xmin, EEG.xmax, size(EEG.data, 2));'];          
+            eegplot(EEG_disp.data, ...
+                'eloc_file',EEG_disp.chanlocs,...
+                'butlabel','Reject', ...
+                'command', cmd,...
+                'wincolor', [1, 0.7, 0.7],...
+                'spacing',   SETTINGS.amplitudeToDisplay, ...
+                'winlength', SETTINGS.timeRangeToDisplay,...
+                'events', EEG_disp.event, ...
+                'srate', EEG_disp.srate);
+           %input(sprintf('\n =============== \n Visual inspection done? Press ENTER \n ===============  \n')) 
+           uiwait(gcf)
+
            if SETTINGS.removeChannels
-                RMchan = removeChannels_gui(EEG);
-                channelsToRemove = RMchan.channelsToRemove;
+                channelsToRemove = channels_selection_gui_app.showGUI(EEG, 'My Title');
                 EEG.data(channelsToRemove, :) = NaN;
            end
-           EEG = addHistory(EEG, "dataInspection", TMPREJ);
+           
+           if isempty(tmprej)
+                EEG = addHistory(EEG, "dataInspection", "skipped");
+           else
+                EEG = addHistory(EEG, "dataInspection", TMPREJ);
+           end
            recursivelySaveFile(EEG, SETTINGS.pathname, 'VisualInspection', SETTINGS.filenames{subjectNo});
                 
         case 'runICA'
