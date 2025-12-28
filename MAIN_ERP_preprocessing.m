@@ -15,7 +15,8 @@ else
     end
 end
 % Add only required code folders (adjust names as necessary)
-addpath(fullfile(curr_path, 'helpers'));
+addpath(fullfile(curr_path, 'gui'));
+addpath(fullfile(curr_path, 'functions'));
 addpath(fullfile(curr_path, 'ElectrodesLocations'));
 addpath(fullfile(curr_path, 'Eventlists'));
 
@@ -55,7 +56,7 @@ for subjectNo = 1:length(SETTINGS.filenames)
         case 'rereference'
             EEG = pop_reref( EEG, find(ismember({EEG.chanlocs.labels}, SETTINGS.newReference)), 'keepref', 'on');
             EEG = addHistory(EEG, "rereference", SETTINGS.newReference);
-            EEG = rejectEXGchannels(EEG);       
+            EEG = rejectEXGchannels(EEG, SETTINGS.newReference);       
             recursivelySaveFile(EEG, SETTINGS.pathname, 'ReReferenced', SETTINGS.filenames{subjectNo});
             
         case 'resample'
@@ -233,13 +234,13 @@ for subjectNo = 1:length(SETTINGS.filenames)
                                   
         case 'artifactsRejection'
            rejepochcol =  [.95, .75, .7];
-           EEG_original = EEG;
            if SETTINGS.usePrevRejEpochs
                [tmprej_file, tmprej_path] = uigetfile(curr_path);               
                tmprej = loadTmpRej(SETTINGS.filenames{subjectNo}, tmprej_path);
+               EEG.reject.tmprej = tmprej;
                winrej = trial2eegplot( ...
-                   EEG.tmprej, ...
-                   repmat(EEG.tmprej, EEG.nbchan),... %electrode rejection array (size nb_elec x trials)
+                   tmprej, ...
+                   repmat(tmprej, EEG.nbchan),... %electrode rejection array (size nb_elec x trials)
                    EEG.pnts, ...
                    rejepochcol);
            else
@@ -256,23 +257,34 @@ for subjectNo = 1:length(SETTINGS.filenames)
      
                EEG = eeg_rejsuperpose( EEG, 1, 1, 1, 1, 1, 1, 1, 1);
                winrej=trial2eegplot(EEG.reject.rejmanual, EEG.reject.rejmanualE, EEG.pnts,rejepochcol);
-           end
 
-           %display EEG plot
-%            pause(3)
-           cmd = ['[tmprej tmprejE] = eegplot2trial( TMPREJ, EEG.pnts, EEG.trials); [EEG LASTCOM] = pop_rejepoch(EEG, tmprej, 0);'];
-           eegplot(EEG.data, 'eloc_file',EEG.chanlocs,...
-                       'butlabel','Reject', ...
-                       'command', cmd,...
-                       'wincolor', [1, 0.7, 0.7],...
-                       'winrej',winrej, ...
-                       'spacing', 100, ...
-                       'winlength', 10, ...
-                       'events', EEG.event, ...
-                       'srate',  EEG.srate);
-                   
-                   
-                   
+               %EEG = eeg_rejsuperpose( EEG, 1, 1, 1, 1, 1, 1, 1, 1);
+               %EEG.reject.tmprej = EEG.reject.rejglobal;
+               %winrej=trial2eegplot(EEG.reject.rejmanual, EEG.reject.rejmanualE, EEG.pnts, rejepochcol);
+           end
+            
+           % Create a lightweight 'display' version of the EEG (e.g., decimated to ~128Hz)
+           % This speeds up rendering significantly without affecting the actual data quality.
+           disp_srate = 32; % Hz - sufficient for visual inspection
+           EEG_disp = pop_resample(EEG, disp_srate); 
+           current_rej = EEG.reject.rejmanual;
+           current_rejE = repmat(current_rej, EEG.nbchan, 1)*0;
+           winrej_disp = trial2eegplot(current_rej, current_rejE, EEG_disp.pnts, rejepochcol);
+           cmd = ['[tmprej, ~] = eegplot2trial(TMPREJ, ' num2str(EEG_disp.pnts) ', ' num2str(EEG_disp.trials) '); [EEG, LASTCOM] = pop_rejepoch(EEG, tmprej, 0);'];
+           
+           %cmd = ['[tmprej tmprejE] = eegplot2trial( TMPREJ, EEG.pnts, EEG.trials); [EEG LASTCOM] = pop_rejepoch(EEG, tmprej, 0);'];
+            
+           eegplot(EEG_disp.data, ...
+                   'eloc_file',EEG_disp.chanlocs,...
+                   'butlabel','Reject', ...
+                   'command', cmd,...
+                   'wincolor', [1, 0.7, 0.7],...
+                   'winrej',winrej_disp, ...
+                   'spacing', 100, ...
+                   'winlength', 10, ...
+                   'events', EEG_disp.event, ...
+                   'srate',  EEG_disp.srate ...
+                   );
            uiwait(gcf)
        
            saveTmpRej(SETTINGS.filenames{subjectNo}, tmprej, fullfile(SETTINGS.pathname, 'ArtifactsRejected'))
