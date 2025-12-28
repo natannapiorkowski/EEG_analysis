@@ -57,43 +57,32 @@ classdef channels_selection_gui_app < matlab.apps.AppBase
         end
 
         function listbox1ValueChanged(app, event)
-            % 1. Get the current selected value
             val = app.ListBox.Value;
-        
-            % GUARD: Exit if selection is empty
-            if isempty(val)
-                return; 
-            end
+            if isempty(val), return; end
             
-            % 2. Find the index of the clicked item
-            [found, idx] = ismember(val, app.ListBox.Items);
+            [~, idx] = ismember(val, app.ListBox.Items);
+            
+            % Toggle the status
+            app.ChannelStatus(idx) = ~app.ChannelStatus(idx);
+            
             if app.ChannelStatus(idx)
-                % ACTION: Mark for removal (RED)
-                app.ChannelStatus(idx) = false;
-                
-                % Create style and store it
-                s = uistyle('BackgroundColor', [1 1 1]); 
-                app.StyleHandles{idx} = s; 
-                addStyle(app.ListBox, s, 'item', idx);
+                % It is now SELECTED -> Red
+                s = uistyle('BackgroundColor', [1 0.6 0.6]);
             else
-                % ACTION: Re-include (WHITE)
-                app.ChannelStatus(idx) = true;
-                
-                s = uistyle('BackgroundColor', [1 0.6 0.6]); 
-                app.StyleHandles{idx} = s; 
-                addStyle(app.ListBox, s, 'item', idx);
+                % It is now UNSELECTED -> White
+                s = uistyle('BackgroundColor', [1 1 1]);
             end
             
-            % 3. Clear selection highlight
-            % IMPORTANT: This triggers the callback again, 
-            % but the 'isempty(val)' at the top will stop it safely.
-            app.ListBox.Value = {}; 
+            addStyle(app.ListBox, s, 'item', idx);
+            app.ListBox.Value = {}; % Clear blue highlight
         end
 
 
         function OK_pushbuttonPushed(app, event)
-            % Return indices of channels marked as 'false' (Red)
+            % 1. Capture the indices where Status is true (Red/Selected)
             app.Output = find(app.ChannelStatus);
+                
+            % 2. Signal showGUI to continue
             uiresume(app.UIFigure);
         end
 
