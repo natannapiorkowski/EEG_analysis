@@ -20,7 +20,7 @@ addpath(fullfile(curr_path, 'functions'));
 addpath(fullfile(curr_path, 'ElectrodesLocations'));
 addpath(fullfile(curr_path, 'Eventlists'));
 
-eeglab('nogui');
+eeglab;
 close all
 
 %% SETTINGS
@@ -95,6 +95,14 @@ for subjectNo = 1:length(SETTINGS.filenames)
 
 % dataInspection ==========================================================            
         case 'dataInspection'
+           if SETTINGS.detectStimulationGaps
+                EEG = rename_events_gui.run_app(EEG);
+                EEG = eeg_checkset(EEG,'eventconsistency');
+                if EEG.epochs_renamed
+                    EEG = addHistory(EEG, "Found gaps in stimulation. Renamed epochs", "");
+                end
+           end
+
             disp_srate = 32; % Hz - sufficient for visual inspection
             downsample_factor = max(1, floor(EEG.srate / disp_srate));
             EEG_disp = pop_resample(EEG, disp_srate); 
@@ -322,14 +330,6 @@ for subjectNo = 1:length(SETTINGS.filenames)
 %artifactsRejection =======================================================
         case 'artifactsRejection'
            rejepochcol =  [.95, .75, .7];
-
-           if SETTINGS.detectStimulationGaps
-                EEG = rename_events_gui.run_app(EEG);
-                if EEG.epochs_renamed
-                    EEG = addHistory(EEG, "Found gaps in stimulation. Renamed epochs ", tmprej);
-                end
-           end
-
            if SETTINGS.usePrevRejEpochs
                [tmprej_file, tmprej_path] = uigetfile(curr_path);               
                tmprej = loadTmpRej(SETTINGS.filenames{subjectNo}, tmprej_path);
@@ -345,7 +345,7 @@ for subjectNo = 1:length(SETTINGS.filenames)
                    'Channel',1:EEG.nbchan, ...
                    'Flag',1, ...
                    'Threshold',[SETTINGS.lowAmplitudeThreshold SETTINGS.highAmplitudeThreshold], ...
-                   'Twindow', [SETTINGS.minTimeWindowArtifacts SETTINGS.maxTimeWindowArtifacts] );
+                   'Twindow', [SETTINGS.minTimeWindowArtifacts/1000 SETTINGS.maxTimeWindowArtifacts/1000] );
                %exclude trial with too large sample-to sample amplitude
                EEG  = pop_artdiff(EEG, ...
                                   'Channel',1:EEG.nbchan, ...
