@@ -73,6 +73,16 @@ function GUI_preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
     );
 
 
+    handles.detectStimulationGaps_checkbox = uicontrol( ...
+        'Parent', get(hArtifRadio,'Parent'), ...
+        'Style', 'checkbox', ...
+        'String', 'Detect stimulation breaks', ...
+        'Tag', 'detectStimulationGaps_checkbox', ...
+        'Value', 0, ...
+        'Units', 'pixels', ...
+        'Position', [cbX cbY-cbH cbW cbH], ...
+        'Callback', @detectStimulationGaps_checkbox_Callback ...
+    );
     
     % Some initial values and variables
 %     handles.output = hObject;   
@@ -102,7 +112,8 @@ function GUI_preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
     handles.output.maxTimeWindowArtifacts = str2double(get(handles.maxTimeWindowArtifacts_edit,'String'));
     handles.output.noActivity             = str2double(get(handles.noActivity_edit,'String'));
     handles.output.noActivityDuration     = str2double(get(handles.noActivityDuration_edit,'String'));
-    handles.output.usePrevRejEpochs = 0;
+    handles.output.usePrevRejEpochs       = 0;
+    handles.output.detectStimulationGaps  = 0;
 
     % groups of text boxes and buttons to disable/enable tem
     handles.importChansLocs_group   = {handles.interpolationMethods_popup};
@@ -718,7 +729,15 @@ function use_previously_rejected_epochs_checkbox_Callback(hObject, eventdata, ha
     handles.output.usePrevRejEpochs = get(hObject,'Value');  % 0/1
 
     guidata(hFig, handles);   
-    
+function detectStimulationGaps_checkbox_Callback(hObject, eventdata, handles)
+    % Always refresh handles from the owning figure
+    hFig = ancestor(hObject, 'figure');
+    handles = guidata(hFig);
+
+    handles.output.detectStimulationGaps = get(hObject,'Value');  % 0/1
+
+    guidata(hFig, handles);   
+
 function signalView_pushbutton_Callback(hObject, eventdata, handles)
     setAllFieldsDisabled(handles)
     setFieldsEnabled(handles.artifactsRejection_group)

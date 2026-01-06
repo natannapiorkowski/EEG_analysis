@@ -322,6 +322,14 @@ for subjectNo = 1:length(SETTINGS.filenames)
 %artifactsRejection =======================================================
         case 'artifactsRejection'
            rejepochcol =  [.95, .75, .7];
+
+           if SETTINGS.detectStimulationGaps
+                EEG = rename_events_gui.run_app(EEG);
+                if EEG.epochs_renamed
+                    EEG = addHistory(EEG, "Found gaps in stimulation. Renamed epochs ", tmprej);
+                end
+           end
+
            if SETTINGS.usePrevRejEpochs
                [tmprej_file, tmprej_path] = uigetfile(curr_path);               
                tmprej = loadTmpRej(SETTINGS.filenames{subjectNo}, tmprej_path);
