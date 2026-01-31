@@ -7,7 +7,7 @@ function EEG = removeEpochs_singleChannel(EEG, varargin)
 p = inputParser;
 p.addRequired('EEG');
 p.addParameter('channelsToPlot', {EEG.chanlocs.labels});
-p.addParameter('channelsOfInterest','0');
+p.addParameter('channelsOfInterest','');
 p.addParameter('howManyEpochsToDisplay',10);
 p.addParameter('colorOfChannelsInterest',[0, 1, 0]);
 p.addParameter('defaultColor',[0, 0, 0]);
