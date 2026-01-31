@@ -49,7 +49,7 @@ function GUI_preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
     % handles    structure with handles and user data (see GUIDATA)
     % varargin   command line arguments to GUI_preprocessing (see VARARGIN)
 
-    % Manually add a checkbox
+    % Manually add elements to the gui
     hArtifRadio = findobj(handles.figure1, 'Tag', 'artifReject_radio');
     oldUnits = get(hArtifRadio, 'Units');
     set(hArtifRadio, 'Units', 'pixels');
@@ -61,6 +61,7 @@ function GUI_preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
     cbY = rPos(2) - cbH - 6;
     cbW = max(150, rPos(3));
 
+    % Checkbox: 'Use previously rejected epochs'
     handles.use_previously_rejected_epochs_checkbox = uicontrol( ...
         'Parent', get(hArtifRadio,'Parent'), ...
         'Style', 'checkbox', ...
@@ -72,9 +73,26 @@ function GUI_preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
         'Callback', @use_previously_rejected_epochs_checkbox_Callback ...
     );
 
+    % Add a radiobutton: 'Reject Individual Cells'
+    handles.rejectIndividualCells = uicontrol( ...
+        'Parent', handles.uipanel1, ...    % This attaches it to your specific panel
+        'Style', 'radiobutton', ...
+        'String', 'Reject Individual Cells', ...
+        'Tag', 'rejectIndividualCells_radio', ...
+        'Value', 0, ...                    % 0 = Unselected, 1 = Selected
+        'Units', 'normalized', ...         % Normalized makes scaling easier
+        'Position', [0.0341, 0.15, 0.2, 0.05], ... % [x, y, width, height]
+        'FontSize', 13, ...
+        'FontName', 'Helvetica', ...
+        'FontAngle', 'normal', ...
+        'FontWeight', 'bold');
+
+    % move Checkbox removeChannels_checkbox
     set(handles.removeChannels_checkbox, 'Units', 'normalized');
     refPos = get(handles.removeChannels_checkbox, 'Position');% [x, y, width, height]
-    disp([refPos(1) refPos(2) refPos(3), refPos(4)])
+    
+    
+    % Checkbox: 'Detect stimulation breaks'
     handles.detectStimulationGaps_checkbox = uicontrol( ...
         'Parent', get(hArtifRadio,'Parent'), ...
         'Style', 'checkbox', ...
@@ -265,6 +283,7 @@ function loadFiles_pushbutton_Callback(hObject, eventdata, handles)
     if ischar(filenames)
         filenames={filenames};
     end
+   
     files = {};
     for i =1:length(filenames)
         if ~isempty(strfind(filenames{i}, 'bdf')) || ~isempty(strfind(filenames{i}, 'set'))
@@ -333,6 +352,8 @@ function uipanel1_SelectionChangeFcn(hObject, eventdata, handles)
         case 'artifReject_radio'
             handles.output.analysisStep = 'artifactsRejection';  
             setFieldsEnabled(handles.artifactsRejection_group)
+        case 'rejectIndividualCells_radio'
+            handles.output.analysisStep = 'rejectIndividualCells';
         case 'averaging_radio' 
             handles.output.analysisStep = 'average';  
     end
