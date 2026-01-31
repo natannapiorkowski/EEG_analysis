@@ -408,7 +408,13 @@ for subjectNo = 1:length(SETTINGS.filenames)
            EEG = addHistory(EEG, "artifactsRejection", tmprej);
            recursivelySaveFile(EEG, SETTINGS.pathname, 'ArtifactsRejected', SETTINGS.filenames{subjectNo});
 
+% rejectIndividualCells =========================================================                   
+        case 'rejectIndividualCells'
+            EEG = removeEpochs_singleChannel(EEG);
+            % addHistory is performed within removeEpochs_singleChannel
+            recursivelySaveFile(EEG, SETTINGS.pathname, 'RejectedIndividualCells', SETTINGS.filenames{subjectNo});
 % importChansLocs =========================================================           
+        
         case 'importChansLocs'  
             % Import channels locations for 64 or 128 electrodes
             if EEG.nbchan > 100
