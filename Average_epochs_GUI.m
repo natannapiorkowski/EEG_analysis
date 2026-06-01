@@ -486,6 +486,9 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
             mask = (app.xaxis >= latency_sec-app.ERP_search_window) & (app.xaxis <= latency_sec + app.ERP_search_window);
             idx  = find(mask);   
             signal_fragment = app.EEG.averaged_data(app.curr_channel, idx, epoch);
+            if startsWith(lower(app.ComponentNames{app.CurrentComponentIndex}), "n")
+                signal_fragment = -1*signal_fragment; % flip signal if the component is negative 
+            end
             [amplitudes, latencies] = findpeaks(signal_fragment);
             if isempty(latencies)
                 [amplitudes, latencies] = findpeaks(diff(signal_fragment));
