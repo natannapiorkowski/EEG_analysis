@@ -47,7 +47,6 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
         current_latency
         ERP_latencies = []    % Expanded to [chan x component x epoch]
         ERP_is_component = [] % 0: no component, 1: component present
-        ERP_amplitudes = []
 
         % PLOTTING
         show_grand_average = false
@@ -58,7 +57,7 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
         StatusBarPatch
         save_image_dirname = ''
         save_image_folderName = 'Peak_Performance_Images'
-
+        EEG_struct_name = 'Cumulative_ERP_averaging'
     end
 
     % Component initialization
@@ -245,7 +244,6 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
                 app.ERP_latencies(:, nComp, :) = nan;
                 app.ERP_is_component(:, nComp, :) = nan;
                 app.ERP_is_component(:, nComp, 1:app.min_number_of_epochs) = 0;
-                app.ERP_amplitudes(:, nComp, :) = nan;
                 app.ComponentListBox.Items = app.ComponentNames;
                 app.ComponentListBox.Value = name;
                 app.CurrentComponentIndex = nComp;
@@ -319,7 +317,7 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
 
         function latency_sec = detectEpochLatency(app, src, epoch, latency_sec)
             % If latency not yet detected (NaN) -> try detect
-            if isnan(app.ERP_amplitudes(app.curr_channel, app.CurrentComponentIndex, epoch))
+            if isnan(app.ERP_latencies(app.curr_channel, app.CurrentComponentIndex, epoch))
                [amplitude, detected_latency] = find_peak(app, epoch, latency_sec);
                if isempty(detected_latency)  
                    app.curr_N_epochs = epoch;
@@ -344,12 +342,12 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
 
         function FinishButtonPushed(app, ~, ~)
             % 1. Save the modified data into the Output property
-            app.EEG.Cumulative_ERP_averaging = {};
-            app.EEG.Cumulative_ERP_averaging.averaged_data = app.EEG.averaged_data;
-            app.EEG.Cumulative_ERP_averaging.ERP_latencies = app.ERP_latencies;
-            app.EEG.Cumulative_ERP_averaging.ERP_is_component = app.ERP_is_component;
-            app.EEG.Cumulative_ERP_averaging.ComponentNames = app.ComponentNames;
-            app.EEG.Cumulative_ERP_averaging.ComponentColors = app.ComponentColors;
+            app.EEG.(app.EEG_struct_name) = {};
+            app.EEG.(app.EEG_struct_name).averaged_data = app.EEG.averaged_data;
+            app.EEG.(app.EEG_struct_name).ERP_latencies = app.ERP_latencies;
+            app.EEG.(app.EEG_struct_name).ERP_is_component = app.ERP_is_component;
+            app.EEG.(app.EEG_struct_name).ComponentNames = app.ComponentNames;
+            app.EEG.(app.EEG_struct_name).ComponentColors = app.ComponentColors;
 
             if isfield(app.EEG , 'averaged_data')
                 app.EEG = rmfield(app.EEG, 'averaged_data');
@@ -528,12 +526,20 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
 
         % === tests and checks
         function test_EEG_struct(app)
+            if isempty(app.EEG)
+                h = errordlg("EEG structure is empty! I need data!");
+                uiwait(h);
+                delete(app)
+            end
+            
             % check if the data is epoched
             if app.EEG.trials == 1
                 h = errordlg("EEG data must be epoched!");
                 uiwait(h);
                 delete(app)
             end
+
+
 
         end
     end
@@ -547,20 +553,34 @@ classdef Average_epochs_GUI < matlab.apps.AppBase
             createComponents(app)
             app.EEG = inputEEG; 
             test_EEG_struct(app)
-
+            
             compute_EEG_averages(app)
             app.channel_labels = {app.EEG.chanlocs.labels};
             registerApp(app, app.UIFigure)
             
-            if ~isempty(app.EEG)
-                app.Slider.Limits = [1, app.EEG.trials]; 
-                app.ChannelsListBox.Items = string({app.EEG.chanlocs.labels});
+            % ===> Initialize app elements
+            
+            % Case 1: If the app had been used and some peaks had been already detected - load them!
+            app.Slider.Limits = [1, app.EEG.trials]; 
+            app.ChannelsListBox.Items = string({app.EEG.chanlocs.labels});
+            if isfield(app.EEG, app.EEG_struct_name)
+                app.ComponentNames = app.EEG.(app.EEG_struct_name).ComponentNames;
+                nComp = numel(app.ComponentNames);
+                app.ERP_latencies = app.EEG.(app.EEG_struct_name).ERP_latencies;
+                app.ERP_is_component = app.EEG.(app.EEG_struct_name).ERP_is_component;
+                app.ComponentColors = app.EEG.(app.EEG_struct_name).ComponentColors;
+                app.ComponentListBox.Items = app.ComponentNames;
+
+            % Case 2: If this is first app launch init empty structures to
+            % store components latencies, colors etc
+            else
                 nComp = numel(app.ComponentNames);
                 app.ERP_latencies = nan(app.EEG.nbchan, nComp, app.EEG.trials);
                 app.ERP_is_component  = nan(app.EEG.nbchan, nComp, app.EEG.trials);
                 app.ERP_is_component(:, :, 1:app.min_number_of_epochs) = 0;
-                app.ERP_amplitudes = nan(app.EEG.nbchan, nComp, app.EEG.trials);
             end
+            
+
 
             if isfield(inputEEG, 'filename'), app.UIFigure.Name = strrep(app.EEG.filename, ".set", ""); end
             app.xaxis = linspace(app.EEG.xmin, app.EEG.xmax, app.EEG.pnts);
