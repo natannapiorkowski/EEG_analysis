@@ -35,6 +35,11 @@ for subjectNo = 1:length(EEG_files)
     % Load EEG data
     EEG = loadEEGfile(location, EEG_files{subjectNo});
     
+    if ~isfield(EEG, 'Cumulative_ERP_averaging')
+        fprintf('Subject: %s. Missing Cumulative_ERP_averaging', EEG_files{subjectNo})
+        continue
+    end
+
     % Extract data from the EEG struct
     subject_name = strrep(EEG.filename, ".set", "");
     channels     = {EEG.chanlocs.labels};
