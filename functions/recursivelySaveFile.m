@@ -6,7 +6,7 @@ function recursivelySaveFile(EEG, currResultsPath, saveFolder, filename, varargi
     p.parse(varargin{:});
 
     toSavePath = fullfile(currResultsPath, saveFolder);
-    
+
     % Add suffix to the filename    
     if ~isempty(p.Results.FileNameSuffix)
         if ~isempty(strfind(filename, '.set'))
@@ -20,7 +20,11 @@ function recursivelySaveFile(EEG, currResultsPath, saveFolder, filename, varargi
 
     % saving file
     mkdir(toSavePath)
-    pop_saveset( EEG, 'filename',filename,'filepath',toSavePath, 'savemode','twofiles');
+    
+    pop_saveset(EEG, ...
+                'filename',char(filename),...
+                'filepath',char(toSavePath),...
+                'savemode','twofiles');
     
     
     
