@@ -81,13 +81,17 @@ close all
 %% ===== Select files =====
 [EEG_files, location] = uigetfile("*.set", "MultiSelect", "on");
 
+%%
+clc
 for subjectNo = 1:length(EEG_files)
-    fprintf("\nLoading subject %d out of %d\n", subjectNo, length(EEG_files))
+    fprintf("\n\n\n")
+    fprintf("============================================================\n")
+    fprintf("Loading subject %d out of %d \n", subjectNo, length(EEG_files))
     
   
     % Load EEG data
     EEG = loadEEGfile(location, EEG_files{subjectNo});
-
+    
     % Get epochs labels. The problem is that sometimes there is more than
     % one label in the epoch (for example there are empty events)
     % this is why we need the following workaround:
@@ -126,7 +130,7 @@ for subjectNo = 1:length(EEG_files)
     % Process each unique epoch
     for epochNo = 1:length(unique_epoch_labels)
         epoch_label = unique_epoch_labels{epochNo};
-        fprintf("Processing epochs: %s \n", epoch_label);
+        fprintf("\n===== Processing epochs: %s ===== \n", epoch_label);
         
         new_filename = strcat(strrep(EEG.filename, ".set", ""), "_", epoch_label);
         new_filename = strrep(new_filename, "(", "");
@@ -142,15 +146,16 @@ for subjectNo = 1:length(EEG_files)
         EEG_epoch.filename = new_filename;
         EEG_epoch.filepath = fullfile(location, new_foldername);
 
-        % Select epochs from EEG_epoch.Cumulative_ERP_averaging
-        EEG_epoch.Cumulative_ERP_averaging.averaged_data = EEG_epoch.Cumulative_ERP_averaging.averaged_data(:, :, matching_positions);
-        EEG_epoch.Cumulative_ERP_averaging.ERP_latencies = EEG_epoch.Cumulative_ERP_averaging.ERP_latencies(:, :, matching_positions);
-        EEG_epoch.Cumulative_ERP_averaging.ERP_is_component = EEG_epoch.Cumulative_ERP_averaging.ERP_is_component(:, :, matching_positions);
-
-        assert(size(EEG_epoch.Cumulative_ERP_averaging.averaged_data, 3) == EEG_epoch.trials, 'Mismatch! EEG_epoch.Cumulative_ERP_averaging.averaged_data vs EEG_epoch.trials');
-        assert(size(EEG_epoch.Cumulative_ERP_averaging.ERP_latencies, 3) == EEG_epoch.trials, 'Mismatch! EEG_epoch.Cumulative_ERP_averaging.ERP_latencies vs EEG_epoch.trials');
-        assert(size(EEG_epoch.Cumulative_ERP_averaging.ERP_is_component, 3) == EEG_epoch.trials, 'Mismatch! EEG_epoch.Cumulative_ERP_averaging.ERP_is_component vs EEG_epoch.trials');
+        if isfield(EEG_epoch, 'Cumulative_ERP_averaging')
+            % Select epochs from EEG_epoch.Cumulative_ERP_averaging
+            EEG_epoch.Cumulative_ERP_averaging.averaged_data = EEG_epoch.Cumulative_ERP_averaging.averaged_data(:, :, matching_positions);
+            EEG_epoch.Cumulative_ERP_averaging.ERP_latencies = EEG_epoch.Cumulative_ERP_averaging.ERP_latencies(:, :, matching_positions);
+            EEG_epoch.Cumulative_ERP_averaging.ERP_is_component = EEG_epoch.Cumulative_ERP_averaging.ERP_is_component(:, :, matching_positions);
     
+            assert(size(EEG_epoch.Cumulative_ERP_averaging.averaged_data, 3) == EEG_epoch.trials, 'Mismatch! EEG_epoch.Cumulative_ERP_averaging.averaged_data vs EEG_epoch.trials');
+            assert(size(EEG_epoch.Cumulative_ERP_averaging.ERP_latencies, 3) == EEG_epoch.trials, 'Mismatch! EEG_epoch.Cumulative_ERP_averaging.ERP_latencies vs EEG_epoch.trials');
+            assert(size(EEG_epoch.Cumulative_ERP_averaging.ERP_is_component, 3) == EEG_epoch.trials, 'Mismatch! EEG_epoch.Cumulative_ERP_averaging.ERP_is_component vs EEG_epoch.trials');
+        end
 
         % Save to a file
         EEG_epoch = addHistory(EEG_epoch, sprintf("Selected ony epochs labeled: %s", epoch_label), []);
