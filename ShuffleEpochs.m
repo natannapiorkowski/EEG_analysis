@@ -76,13 +76,13 @@ for subjectNo = 1:length(EEG_files)
     ax.YAxisLocation = "origin";
 
     % plot normal average
-    plot(time, normal_average, 'blue', 'LineWidth', 5, 'DisplayName', 'Normal average')
+    plot(time, normal_average, 'blue', 'LineWidth', 1, 'DisplayName', 'Normal average')
     line(ax, [min(time(:)) 0], [mean(normal_average) mean(normal_average)], ...
         'LineStyle', '--', 'Color', 'b', 'LineWidth', 1, ...
         'DisplayName', 'normal baseline mean');
 
     % Plot shuffled average
-    plot(time, shuffled_average, "r", 'DisplayName', 'Shuffled average')
+    plot(time, shuffled_average, "r", 'DisplayName', 'Shuffled average', 'LineWidth', 2)
     line(ax, [min(time(:)) 0], [mean(shuffled_average, 'omitnan') mean(shuffled_average, 'omitnan')], ...
         'LineStyle', '--', 'Color', 'r', 'LineWidth', 1, ...
         'DisplayName', 'normal baseline mean');
